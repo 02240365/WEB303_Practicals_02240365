@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package inventory;
+
+option go_package = "ecommerce-microservices/proto";
+
+// InventoryService keeps track of how many units of each product are
+// available and lets other services check and reserve stock.
+service InventoryService {
+  // CheckStock returns the current quantity available for a product.
+  rpc CheckStock (StockRequest) returns (StockResponse);
+
+  // DecreaseStock reserves (subtracts) a quantity from a product's stock.
+  // Returns FAILED_PRECONDITION if there is not enough stock, and
+  // NOT_FOUND if the product has no inventory record.
+  rpc DecreaseStock (DecreaseStockRequest) returns (StockResponse);
+}
+
+message StockRequest {
+  string product_id = 1;
+}
+
+message DecreaseStockRequest {
+  string product_id = 1;
+  int32 quantity = 2;
+}
+
+message StockResponse {
+  string product_id = 1;
+  int32 quantity = 2;
+}

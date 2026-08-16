@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package payment;
+
+option go_package = "ecommerce-microservices/proto";
+
+// PaymentService simulates charging a customer for an order.
+service PaymentService {
+  // ProcessPayment charges a customer for a given order and returns a
+  // payment confirmation. Returns INVALID_ARGUMENT if the request is
+  // missing required fields or the amount is not positive.
+  rpc ProcessPayment (PaymentRequest) returns (PaymentResponse);
+}
+
+message PaymentRequest {
+  string order_id = 1;
+  string customer_id = 2;
+  double amount = 3;
+}
+
+message PaymentResponse {
+  string payment_id = 1;
+  string status = 2; // e.g. "SUCCESS"
+}
