@@ -40,6 +40,13 @@ import (
 // to give enough real time to stop/restart the server by hand between
 // attempts. The original Part A and Part B commands from Lab 2 are
 // unchanged.
+//
+// Lab 4 change: the timing constants below were changed from `const` to
+// `var`. Nothing about their default values or the CLI demo's behaviour
+// changed - this only makes them overridable from a _test.go file in the
+// same package, so unit tests can shrink a 3s backoff down to a few
+// milliseconds and run in a fraction of a second instead of waiting
+// through real, human-scale delays. See order-service/unit_test.go.
 // =====================================================================
 
 func main() {
@@ -148,7 +155,9 @@ func getProduct(productID string) {
 // PATTERN 1: TIMEOUT (standalone, no retry, no circuit breaker)
 // =====================================================================
 
-const timeoutDuration = 2 * time.Second
+// Lab 4: changed from `const` to `var` so tests can override it (see
+// header comment above). Default value is unchanged from Lab 3.
+var timeoutDuration = 2 * time.Second
 
 // timeoutGetProduct makes exactly ONE call to the Product Service,
 // bounded by a 2 second context timeout. If the server does not
@@ -202,7 +211,9 @@ func runTimeoutDemo(productID string) {
 // PATTERN 2: RETRY (standalone, no timeout pattern, no circuit breaker)
 // =====================================================================
 
-const (
+// Lab 4: all three changed from `const` to `var` so tests can override
+// them (see header comment above). Default values are unchanged from Lab 3.
+var (
 	maxRetries       = 3
 	retryBaseBackoff = 3 * time.Second // deliberately generous - gives you real time to restart the server between attempts
 	retryCallTimeout = 5 * time.Second // generous per-attempt timeout, so this call is not exercising the Timeout pattern
@@ -359,7 +370,9 @@ func (cb *CircuitBreaker) State() CircuitState {
 	return cb.state
 }
 
-const breakerCallTimeout = 3 * time.Second // generous, this demo is not exercising the Timeout pattern
+// Lab 4: changed from `const` to `var` so tests can override it.
+// Default value is unchanged from Lab 3.
+var breakerCallTimeout = 3 * time.Second // generous, this demo is not exercising the Timeout pattern
 
 // breakerGetProduct makes exactly ONE attempt (no retry loop) to call
 // the Product Service, gated by the circuit breaker. This isolates
