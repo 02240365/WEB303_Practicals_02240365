@@ -1,0 +1,31 @@
+# docker-compose.yml
+#
+# Starts a local PostgreSQL database for running the web application
+# itself (npm start). This is separate from the integration tests - those
+# (tests/studentRepository.integration.test.js and
+# tests/studentRoutes.integration.test.js) start their OWN throwaway
+# PostgreSQL container automatically via Testcontainers and do not use
+# this compose file at all.
+#
+# Usage:
+#   docker compose up -d      -> start the database in the background
+#   docker compose down       -> stop it
+#   docker compose down -v    -> stop it AND delete all stored data
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sms_user
+      POSTGRES_PASSWORD: sms_password
+      POSTGRES_DB: sms_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - sms_pgdata:/var/lib/postgresql/data
+
+volumes:
+  sms_pgdata:

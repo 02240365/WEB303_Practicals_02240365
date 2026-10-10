@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Records - CST College SMS</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #f5f6f8; margin: 0; padding: 2rem; color: #1c1c1e; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+  .subtitle { color: #666; margin-top: 0; margin-bottom: 1.5rem; }
+  .card { background: #fff; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  form.inline { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  input { padding: 0.5rem 0.6rem; border: 1px solid #d0d0d5; border-radius: 6px; font-size: 0.95rem; }
+  input[type=text], input[type=email] { flex: 1; min-width: 140px; }
+  button { padding: 0.5rem 0.9rem; border: none; border-radius: 6px; background: #2563eb; color: #fff; font-size: 0.9rem; cursor: pointer; }
+  button.secondary { background: #6b7280; }
+  button.danger { background: #dc2626; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
+  th, td { text-align: left; padding: 0.55rem 0.6rem; border-bottom: 1px solid #ececef; font-size: 0.92rem; }
+  th { color: #555; font-weight: 600; background: #fafafa; }
+  .actions button { margin-right: 0.35rem; padding: 0.3rem 0.6rem; font-size: 0.82rem; }
+  .msg { padding: 0.6rem 0.8rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem; }
+  .msg.success { background: #dcfce7; color: #166534; }
+  .msg.error { background: #fee2e2; color: #991b1b; }
+  .hint { color: #888; font-size: 0.8rem; margin-top: 0.35rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Student Records</h1>
+  <p class="subtitle">CST College Student Management System &mdash; backed by PostgreSQL (Lab 5)</p>
+
+  <div id="message"></div>
+
+  <div class="card">
+    <strong>Add Student</strong>
+    <form class="inline" id="addForm" style="margin-top:0.6rem;">
+      <input type="text" id="studentId" placeholder="Student ID (8 digits)" maxlength="8">
+      <input type="text" id="name" placeholder="Name">
+      <input type="email" id="email" placeholder="Email">
+      <input type="text" id="programme" placeholder="Programme">
+      <button type="submit">Add Student</button>
+    </form>
+    <div class="hint">Example: 02240365 / Sonam Zangmo / sonam@example.com / BE Software Engineering</div>
+  </div>
+
+  <div class="card">
+    <form class="inline" id="searchForm">
+      <input type="text" id="searchBox" placeholder="Search by Student ID or Name">
+      <button type="submit" class="secondary">Search</button>
+      <button type="button" class="secondary" id="clearSearch">Clear</button>
+    </form>
+
+    <table>
+      <thead>
+        <tr><th>Student ID</th><th>Name</th><th>Email</th><th>Programme</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="studentsTableBody">
+        <tr><td colspan="5" style="color:#888;">Loading&hellip;</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const messageBox = document.getElementById('message');
+const tableBody = document.getElementById('studentsTableBody');
+
+function showMessage(text, isError) {
+  messageBox.innerHTML = `<div class="msg ${isError ? 'error' : 'success'}">${text}</div>`;
+  setTimeout(() => { messageBox.innerHTML = ''; }, 4000);
+}
+
+async function loadStudents(query) {
+  const url = query ? `/api/students?q=${encodeURIComponent(query)}` : '/api/students';
+  const res = await fetch(url);
+  const data = await res.json();
+  renderTable(data.students || []);
+}
+
+function renderTable(students) {
+  if (students.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="5" style="color:#888;">No student records found.</td></tr>';
+    return;
+  }
+  tableBody.innerHTML = students.map((s) => `
+    <tr>
+      <td>${s.studentId}</td>
+      <td>${s.name}</td>
+      <td>${s.email}</td>
+      <td>${s.programme}</td>
+      <td class="actions">
+        <button class="secondary" onclick="editStudent('${s.studentId}', '${s.name}', '${s.email}', '${s.programme}')">Edit</button>
+        <button class="danger" onclick="deleteStudent('${s.studentId}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('addForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const studentId = document.getElementById('studentId').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const programme = document.getElementById('programme').value.trim();
+
+  const res = await fetch('/api/students', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId, name, email, programme }),
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    showMessage(data.message, false);
+    document.getElementById('addForm').reset();
+    loadStudents();
+  } else {
+    showMessage(data.message, true);
+  }
+});
+
+document.getElementById('searchForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  loadStudents(document.getElementById('searchBox').value.trim());
+});
+
+document.getElementById('clearSearch').addEventListener('click', () => {
+  document.getElementById('searchBox').value = '';
+  loadStudents();
+});
+
+async function editStudent(studentId, currentName, currentEmail, currentProgramme) {
+  const name = prompt('Name:', currentName);
+  if (name === null) return;
+  const email = prompt('Email:', currentEmail);
+  if (email === null) return;
+  const programme = prompt('Programme:', currentProgramme);
+  if (programme === null) return;
+
+  const res = await fetch(`/api/students/${studentId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, programme }),
+  });
+  const data = await res.json();
+  showMessage(data.message, !data.success);
+  loadStudents();
+}
+
+async function deleteStudent(studentId) {
+  if (!confirm(`Delete student ${studentId}?`)) return;
+  const res = await fetch(`/api/students/${studentId}`, { method: 'DELETE' });
+  const data = await res.json();
+  showMessage(data.message, !data.success);
+  loadStudents();
+}
+
+loadStudents();
+</script>
+</body>
+</html>
